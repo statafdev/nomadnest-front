@@ -9,7 +9,8 @@ const HomesExplorer = () => {
       country: "PT",
       listings: [
         {
-          image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+          image:
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
           title: "Sunny Studio in Alfama",
           location: "Lisbon, Portugal",
           price: 65,
@@ -17,7 +18,89 @@ const HomesExplorer = () => {
           host: "Maria",
         },
         {
-          image: "https://images.unsplash.com/photo-1502672260066-6bc2ec9b7e93?w=800",
+          image:
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+          title: "Sunny Studio in Alfama",
+          location: "Lisbon, Portugal",
+          price: 65,
+          rating: 4.9,
+          host: "Maria",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+          title: "Sunny Studio in Alfama",
+          location: "Lisbon, Portugal",
+          price: 65,
+          rating: 4.9,
+          host: "Maria",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+          title: "Sunny Studio in Alfama",
+          location: "Lisbon, Portugal",
+          price: 65,
+          rating: 4.9,
+          host: "Maria",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+          title: "Sunny Studio in Alfama",
+          location: "Lisbon, Portugal",
+          price: 65,
+          rating: 4.9,
+          host: "Maria",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+          title: "Sunny Studio in Alfama",
+          location: "Lisbon, Portugal",
+          price: 65,
+          rating: 4.9,
+          host: "Maria",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+          title: "Sunny Studio in Alfama",
+          location: "Lisbon, Portugal",
+          price: 65,
+          rating: 4.9,
+          host: "Maria",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+          title: "Sunny Studio in Alfama",
+          location: "Lisbon, Portugal",
+          price: 65,
+          rating: 4.9,
+          host: "Maria",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+          title: "Sunny Studio in Alfama",
+          location: "Lisbon, Portugal",
+          price: 65,
+          rating: 4.9,
+          host: "Maria",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+          title: "Sunny Studio in Alfama",
+          location: "Lisbon, Portugal",
+          price: 65,
+          rating: 4.9,
+          host: "Maria",
+        },
+        {
+          image:
+            "https://images.unsplash.com/photo-1502672260066-6bc2ec9b7e93?w=800",
           title: "Modern Loft with Ocean View",
           location: "Cascais, Portugal",
           price: 85,
@@ -25,7 +108,8 @@ const HomesExplorer = () => {
           host: "João",
         },
         {
-          image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800",
+          image:
+            "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800",
           title: "Coworking-Friendly Apartment",
           location: "Porto, Portugal",
           price: 55,
@@ -39,7 +123,8 @@ const HomesExplorer = () => {
       country: "ID",
       listings: [
         {
-          image: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800",
+          image:
+            "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800",
           title: "Jungle Villa with Infinity Pool",
           location: "Ubud, Bali",
           price: 95,
@@ -47,7 +132,8 @@ const HomesExplorer = () => {
           host: "Wayan",
         },
         {
-          image: "https://images.unsplash.com/photo-1602343168117-bb8ffe3e2e9f?w=800",
+          image:
+            "https://images.unsplash.com/photo-1602343168117-bb8ffe3e2e9f?w=800",
           title: "Beachfront Workspace Paradise",
           location: "Canggu, Bali",
           price: 110,
@@ -55,7 +141,8 @@ const HomesExplorer = () => {
           host: "Made",
         },
         {
-          image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800",
+          image:
+            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800",
           title: "Rice Field View Studio",
           location: "Ubud, Bali",
           price: 70,
@@ -69,7 +156,8 @@ const HomesExplorer = () => {
       country: "MX",
       listings: [
         {
-          image: "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=800",
+          image:
+            "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=800",
           title: "Colorful Casa in Roma Norte",
           location: "Mexico City, Mexico",
           price: 60,
@@ -77,7 +165,8 @@ const HomesExplorer = () => {
           host: "Carlos",
         },
         {
-          image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800",
+          image:
+            "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800",
           title: "Rooftop Workspace with City Views",
           location: "Condesa, Mexico",
           price: 75,
@@ -85,7 +174,8 @@ const HomesExplorer = () => {
           host: "Isabella",
         },
         {
-          image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800",
+          image:
+            "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800",
           title: "Modern Apartment Near Coworking",
           location: "Polanco, Mexico",
           price: 80,

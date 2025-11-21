@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 
 const HeroSection = () => {
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden pt-20">
+    <section className="relative h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <img
@@ -13,9 +13,10 @@ const HeroSection = () => {
           alt="Hero Background"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-black/40" /> {/* Overlay for readability */}
+        <div className="absolute inset-0 bg-black/40" />{" "}
+        {/* Overlay for readability */}
       </div>
-      
+
       {/* Floating Decorative Elements - subtle and luxurious */}
       <motion.div
         animate={{ y: [0, -30, 0], rotate: [0, 3, 0] }}
@@ -42,9 +43,11 @@ const HeroSection = () => {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="space-y-6"
           >
-            <h1 className="text-xl md:text-8xl lg:text-9xl font-handwritten text-white leading-tight drop-shadow-lg">
+            <h1 className="text-xl md:text-7xl lg:font-8xl font-bold uppercase text-white">
               Experience the Art of
-              <span className="block text-light-grey italic mt-2 drop-shadow-md">Global Living</span>
+              <span className="block text-light-grey italic mt-2 drop-shadow-md">
+                Global Living
+              </span>
             </h1>
           </motion.div>
 
@@ -54,7 +57,9 @@ const HeroSection = () => {
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
             className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed font-light drop-shadow-md"
           >
-            Curated sanctuaries for the modern wanderer. Immerse yourself in inspiring destinations with premium amenities designed for seamless remote work and unparalleled comfort.
+            Curated sanctuaries for the modern wanderer. Immerse yourself in
+            inspiring destinations with premium amenities designed for seamless
+            remote work and unparalleled comfort.
           </motion.p>
 
           <motion.div
@@ -101,7 +106,9 @@ const HeroSection = () => {
                 <div className="text-4xl font-handwritten text-accent mb-1">
                   {stat.value}
                 </div>
-                <div className="text-sm text-muted-foreground uppercase tracking-wider font-light">{stat.label}</div>
+                <div className="text-sm text-muted-foreground uppercase tracking-wider font-light">
+                  {stat.label}
+                </div>
               </motion.div>
             ))}
           </motion.div>
