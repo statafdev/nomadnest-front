@@ -420,7 +420,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="pt-8 border-t border-gray-200 text-center text-gray-600">
-            <p>© 2024 NomadNest. All rights reserved.</p>
+            <p>© 2025 NomadNest. All rights reserved.</p>
           </div>
         </div>
       </footer>
