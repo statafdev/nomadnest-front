@@ -252,6 +252,80 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+            {/* Quick lists: recent users and listings */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+              <div className="bg-white border-2 border-black rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Recent Users
+                  </h3>
+                  <button
+                    onClick={() => setActiveTab("users")}
+                    className="text-sm text-gray-600 hover:underline"
+                  >
+                    See all
+                  </button>
+                </div>
+                <ul className="space-y-3">
+                  {users.slice(0, 6).map((u: any) => (
+                    <li
+                      key={u._id}
+                      className="flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {u.username ?? "—"}
+                        </p>
+                        <p className="text-xs text-gray-500">{u.email ?? ""}</p>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {u.role === "admin" ? "Admin" : "User"}
+                      </div>
+                    </li>
+                  ))}
+                  {users.length === 0 && (
+                    <li className="text-gray-500">No users yet</li>
+                  )}
+                </ul>
+              </div>
+
+              <div className="bg-white border-2 border-black rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Recent Listings
+                  </h3>
+                  <button
+                    onClick={() => setActiveTab("listings")}
+                    className="text-sm text-gray-600 hover:underline"
+                  >
+                    See all
+                  </button>
+                </div>
+                <ul className="space-y-3">
+                  {listings.slice(0, 6).map((l: any) => (
+                    <li
+                      key={l._id}
+                      className="flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {l.title ?? "—"}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {l.location ?? ""}
+                        </p>
+                      </div>
+                      <div className="text-sm font-bold text-gray-900">
+                        {l.price ? `${l.price}/night` : "—"}
+                      </div>
+                    </li>
+                  ))}
+                  {listings.length === 0 && (
+                    <li className="text-gray-500">No listings yet</li>
+                  )}
+                </ul>
+              </div>
+            </div>
           </div>
         )}
 
