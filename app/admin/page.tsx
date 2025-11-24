@@ -11,11 +11,6 @@ import {
   Loader2,
 } from "lucide-react";
 
-// Use NEXT_PUBLIC_API_URL if provided (dev/prod), otherwise fall back to localhost
-const API_URL = process.env.NEXT_PUBLIC_API_URL
-  ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/api`
-  : "http://localhost:5000/api";
-
 export default function AdminDashboard() {
   const [stats, setStats] = useState<{
     totalUsers: number;
@@ -42,23 +37,32 @@ export default function AdminDashboard() {
       setLoading(true);
 
       // Fetch stats
-      const statsRes = await fetch(`${API_URL}/admin/stats`, {
-        credentials: "include",
-      });
+      const statsRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/stats`,
+        {
+          credentials: "include",
+        }
+      );
       const statsData = await statsRes.json();
       if (statsData.stats) setStats(statsData.stats);
 
       // Fetch users
-      const usersRes = await fetch(`${API_URL}/admin/users`, {
-        credentials: "include",
-      });
+      const usersRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/users`,
+        {
+          credentials: "include",
+        }
+      );
       const usersData = await usersRes.json();
       if (usersData.users) setUsers(usersData.users);
 
       // Fetch all listings
-      const listingsRes = await fetch(`${API_URL}/listings`, {
-        credentials: "include",
-      });
+      const listingsRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/listings`,
+        {
+          credentials: "include",
+        }
+      );
       const listingsData = await listingsRes.json();
       if (listingsData.listings) setListings(listingsData.listings);
     } catch (error) {
@@ -83,10 +87,13 @@ export default function AdminDashboard() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/admin/users/${userId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
 
       if (res.ok) {
         setUsers(users.filter((u: any) => u._id !== userId));
@@ -110,10 +117,13 @@ export default function AdminDashboard() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/admin/listings/${listingId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/listings/${listingId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
 
       if (res.ok) {
         setListings(listings.filter((l: any) => l._id !== listingId));
