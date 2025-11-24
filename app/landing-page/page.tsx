@@ -16,8 +16,21 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL
   ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/api`
   : "http://localhost:5000/api";
 
+interface ListingOwner {
+  username?: string;
+}
+interface Listing {
+  _id?: string;
+  image?: string;
+  title?: string;
+  price?: number | string;
+  location?: string;
+  description?: string;
+  owner?: ListingOwner;
+}
+
 export default function LandingPage() {
-  const [listings, setListings] = useState<any[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -147,20 +160,23 @@ export default function LandingPage() {
                 title: "Premium Comfort",
                 description: "All the essentials for your daily life",
               },
-            ].map((feature, index) => (
-              <div
-                key={index}
-                className="group p-8 bg-white border-2 border-black rounded-2xl hover:shadow-2xl transition-all"
-              >
-                <div className="w-14 h-14 bg-black rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <feature.icon className="w-7 h-7 text-white" />
+            ].map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={index}
+                  className="group p-8 bg-white border-2 border-black rounded-2xl hover:shadow-2xl transition-all"
+                >
+                  <div className="w-14 h-14 bg-black rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-black mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600">{feature.description}</p>
                 </div>
-                <h3 className="text-xl font-bold text-black mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -189,53 +205,63 @@ export default function LandingPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {listings.map((listing) => (
-                <div
-                  key={listing._id}
-                  className="group bg-white border-2 border-black rounded-2xl overflow-hidden hover:shadow-2xl transition-all"
-                >
-                  <div className="relative overflow-hidden h-64">
-                    <img
-                      src={listing.image}
-                      alt={listing.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-lg border-2 border-black font-bold">
-                      {listing.price}/night
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <MapPin className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-600 font-medium">
-                        {listing.location}
-                      </span>
-                    </div>
-                    <h3 className="text-xl font-bold text-black mb-2 group-hover:underline">
-                      {listing.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {listing.description}
-                    </p>
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">
-                            {listing.owner.username.charAt(0).toUpperCase()}
-                          </span>
+              {listings.map((listing) => {
+                const ownerName = listing.owner?.username ?? "Host";
+                const ownerInitial = ownerName.charAt(0).toUpperCase();
+                return (
+                  <div
+                    key={listing._id ?? ownerName}
+                    className="group bg-white border-2 border-black rounded-2xl overflow-hidden hover:shadow-2xl transition-all"
+                  >
+                    <div className="relative overflow-hidden h-64">
+                      {listing.image ? (
+                        <img
+                          src={listing.image}
+                          alt={listing.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          No image
                         </div>
-                        <span className="text-sm font-medium text-gray-700">
-                          {listing.owner.username}
+                      )}
+                      <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-lg border-2 border-black font-bold">
+                        {listing.price}/night
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <MapPin className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-600 font-medium">
+                          {listing.location}
                         </span>
                       </div>
-                      <button className="text-black font-semibold hover:underline flex items-center gap-1">
-                        View details
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
+                      <h3 className="text-xl font-bold text-black mb-2 group-hover:underline">
+                        {listing.title}
+                      </h3>
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                        {listing.description}
+                      </p>
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">
+                              {ownerInitial}
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium text-gray-700">
+                            {ownerName}
+                          </span>
+                        </div>
+                        <button className="text-black font-semibold hover:underline flex items-center gap-1">
+                          View details
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -260,15 +286,18 @@ export default function LandingPage() {
               { value: "500+", label: "Listings", icon: TrendingUp },
               { value: "50+", label: "Countries", icon: MapPin },
               { value: "2000+", label: "Happy nomads", icon: Star },
-            ].map((stat, index) => (
-              <div key={index} className="group">
-                <stat.icon className="w-12 h-12 mx-auto mb-4 group-hover:scale-110 transition-transform" />
-                <div className="text-5xl font-bold mb-2">{stat.value}</div>
-                <div className="text-gray-400 text-lg font-medium">
-                  {stat.label}
+            ].map((stat, index) => {
+              const StatIcon = stat.icon;
+              return (
+                <div key={index} className="group">
+                  <StatIcon className="w-12 h-12 mx-auto mb-4 group-hover:scale-110 transition-transform" />
+                  <div className="text-5xl font-bold mb-2">{stat.value}</div>
+                  <div className="text-gray-400 text-lg font-medium">
+                    {stat.label}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
