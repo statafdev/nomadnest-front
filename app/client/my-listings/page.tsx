@@ -21,7 +21,7 @@ export default function ListingsGrid() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/listings");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/listings`);
         const data = await res.json();
 
         // S'assurer que data.listings est bien un tableau
