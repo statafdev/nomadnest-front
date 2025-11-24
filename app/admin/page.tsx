@@ -1,28 +1,43 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Trash2,
-  Users,
-  Home,
+  Users as UsersIcon,
+  Home as HomeIcon,
   BarChart3,
-  AlertCircle,
-  CheckCircle,
   Loader2,
 } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")
+  : "http://localhost:5000";
+
+type User = {
+  _id: string;
+  username: string;
+  email: string;
+  role?: string;
+  createdAt?: string;
+};
+
+type Listing = {
+  _id: string;
+  title: string;
+  location?: string;
+  price?: number;
+  image?: string;
+  owner?: { _id: string; username: string; email?: string } | string;
+};
+
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<{
-    totalUsers: number;
-    totalListings: number;
-  }>({
-    totalUsers: 0,
-    totalListings: 0,
-  });
-  const [users, setUsers] = useState<any[]>([]);
-  const [listings, setListings] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<string>("stats");
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [stats, setStats] = useState({ totalUsers: 0, totalListings: 0 });
+  const [activeTab, setActiveTab] = useState<"stats" | "listings" | "users">(
+    "stats"
+  );
   const [message, setMessage] = useState<{
     text: string;
     type: "success" | "error";
@@ -32,251 +47,257 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const fetchData = async (): Promise<void> => {
+  async function fetchWithFallback(urls: string[], options?: RequestInit) {
+    // Try each URL in order until one succeeds (res.ok). Return the Response or throw last error.
+    let lastErr: any = null;
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, {
+          credentials: "include",
+          ...(options || {}),
+        });
+        if (res.ok) return res;
+        // keep response but treat as failure for fallback
+        lastErr = new Error(
+          `Request to ${url} failed with status ${res.status}`
+        );
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr;
+  }
+
+  async function fetchData() {
+    setLoading(true);
     try {
-      setLoading(true);
+      // Fetch users: prefer /admin/users, fallback to /users
+      const usersUrls = [`${API_URL}/admin/users`, `${API_URL}/users`];
+      const listingsUrl = `${API_URL}/listings`;
 
-      // Fetch stats
-      const statsRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/stats`,
-        {
-          credentials: "include",
-        }
-      );
-      const statsData = await statsRes.json();
-      if (statsData.stats) setStats(statsData.stats);
+      const [uResPromise, lResPromise] = [
+        fetchWithFallback(usersUrls).catch((e) => null),
+        fetch(listingsUrl, { credentials: "include" }).catch((e) => null),
+      ];
 
-      // Fetch users
-      const usersRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/users`,
-        {
-          credentials: "include",
-        }
-      );
-      const usersData = await usersRes.json();
-      if (usersData.users) setUsers(usersData.users);
+      const [uRes, lRes] = await Promise.all([uResPromise, lResPromise]);
 
-      // Fetch all listings
-      const listingsRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/listings`,
-        {
+      const uJson =
+        uRes && uRes.ok ? await uRes.json().catch(() => null) : null;
+      const lJson =
+        lRes && lRes.ok ? await lRes.json().catch(() => null) : null;
+
+      // users may be returned as { users: [...] } or an array directly depending on backend.
+      const fetchedUsers: User[] = (uJson && (uJson.users || uJson)) || [];
+
+      const fetchedListings: Listing[] =
+        (lJson && (lJson.listings || lJson)) || [];
+
+      setUsers(fetchedUsers);
+      setListings(fetchedListings);
+
+      // try stats endpoint, fallback to computed (you already had this)
+      try {
+        const sRes = await fetch(`${API_URL}/admin/stats`, {
           credentials: "include",
+        });
+        if (sRes.ok) {
+          const sJson = await sRes.json().catch(() => null);
+          if (sJson && sJson.stats) {
+            setStats(sJson.stats);
+          } else {
+            setStats({
+              totalUsers: fetchedUsers.length,
+              totalListings: fetchedListings.length,
+            });
+          }
+        } else {
+          setStats({
+            totalUsers: fetchedUsers.length,
+            totalListings: fetchedListings.length,
+          });
         }
-      );
-      const listingsData = await listingsRes.json();
-      if (listingsData.listings) setListings(listingsData.listings);
-    } catch (error) {
-      showMessage("Error loading data", "error");
+      } catch (err) {
+        setStats({
+          totalUsers: fetchedUsers.length,
+          totalListings: fetchedListings.length,
+        });
+      }
+    } catch (err) {
+      console.error("Admin fetch error", err);
+      setMessage({ text: "Failed to load admin data", type: "error" });
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const showMessage = (text: string, type: "success" | "error" = "success") => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage(null), 3000);
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this user and all their listings?"
-      )
-    ) {
-      return;
-    }
-
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`,
-        {
+  async function tryDeleteSequential(urls: string[]) {
+    // Try DELETE on each URL until one succeeds (res.ok). Return true on success.
+    let lastErr: any = null;
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, {
           method: "DELETE",
           credentials: "include",
-        }
-      );
-
-      if (res.ok) {
-        setUsers(users.filter((u: any) => u._id !== userId));
-        setListings(listings.filter((l: any) => l.owner._id !== userId));
-        setStats((prev) => ({
-          ...prev,
-          totalUsers: prev.totalUsers - 1,
-        }));
-        showMessage("User deleted successfully");
-      } else {
-        showMessage("Error deleting", "error");
+        });
+        if (res.ok) return true;
+        lastErr = new Error(`DELETE ${url} returned ${res.status}`);
+      } catch (err) {
+        lastErr = err;
       }
-    } catch (error) {
-      showMessage("Server error", "error");
     }
-  };
+    console.error("tryDeleteSequential lastErr:", lastErr);
+    return false;
+  }
 
-  const handleDeleteListing = async (listingId: string) => {
-    if (!confirm("Are you sure you want to delete this listing?")) {
-      return;
-    }
+  async function handleDeleteUser(id: string) {
+    if (!confirm("Delete user? This removes all their listings.")) return;
+
+    // Try both admin and non-admin delete endpoints
+    const deleteUrls = [
+      `${API_URL}/admin/users/${id}`,
+      `${API_URL}/users/${id}`,
+    ];
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/listings/${listingId}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
-
-      if (res.ok) {
-        setListings(listings.filter((l: any) => l._id !== listingId));
-        setStats((prev) => ({
-          ...prev,
-          totalListings: prev.totalListings - 1,
-        }));
-        showMessage("Listing deleted successfully");
+      const ok = await tryDeleteSequential(deleteUrls);
+      if (ok) {
+        setUsers((s) => s.filter((u) => u._id !== id));
+        setListings((s) =>
+          s.filter((l) => {
+            // owner may be an object or an id string depending on your backend
+            const ownerId =
+              typeof l.owner === "string" ? l.owner : l.owner?._id;
+            return ownerId !== id;
+          })
+        );
+        setStats((s) => ({ ...s, totalUsers: Math.max(0, s.totalUsers - 1) }));
+        setMessage({ text: "User deleted", type: "success" });
       } else {
-        showMessage("Error deleting", "error");
+        setMessage({ text: "Failed to delete user", type: "error" });
       }
-    } catch (error) {
-      showMessage("Server error", "error");
+    } catch (err) {
+      console.error(err);
+      setMessage({ text: "Server error", type: "error" });
     }
-  };
+  }
+
+  async function handleDeleteListing(id: string) {
+    if (!confirm("Delete listing?")) return;
+
+    // Try both frontend-expected admin path and the alternative listing-router admin path
+    const deleteUrls = [
+      `${API_URL}/admin/listings/${id}`, // frontend originally used this
+      `${API_URL}/listings/admin/${id}`, // many backends (like your listing router) use this
+      `${API_URL}/listings/${id}`, // final fallback (protected user delete) — may fail if not admin
+    ];
+
+    try {
+      const ok = await tryDeleteSequential(deleteUrls);
+      if (ok) {
+        setListings((s) => s.filter((l) => l._id !== id));
+        setStats((s) => ({
+          ...s,
+          totalListings: Math.max(0, s.totalListings - 1),
+        }));
+        setMessage({ text: "Listing deleted", type: "success" });
+      } else {
+        setMessage({ text: "Failed to delete listing", type: "error" });
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage({ text: "Server error", type: "error" });
+    }
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-black animate-spin mx-auto mb-4" />
-          <p className="text-gray-900 text-lg font-medium">
-            Loading dashboard...
-          </p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <BarChart3 className="w-8 h-8 text-black" />
-                Admin Dashboard
-              </h1>
-              <p className="text-gray-600 mt-1">NomadNest - Admin Panel</p>
-            </div>
-          </div>
+      <header className="bg-white border-b">
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          <h1 className="text-2xl font-bold flex items-center gap-3">
+            <BarChart3 /> Admin Dashboard
+          </h1>
         </div>
       </header>
 
-      {/* Message Toast */}
       {message && (
-        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top">
+        <div className="fixed top-4 right-4 z-50">
           <div
-            className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl border-2 ${
+            className={`px-4 py-3 rounded shadow ${
               message.type === "error"
-                ? "bg-white border-red-500 text-red-600"
-                : "bg-white border-green-500 text-green-600"
+                ? "bg-red-100 text-red-800"
+                : "bg-green-100 text-green-800"
             }`}
           >
-            {message.type === "error" ? (
-              <AlertCircle className="w-5 h-5" />
-            ) : (
-              <CheckCircle className="w-5 h-5" />
-            )}
-            <span className="font-semibold">{message.text}</span>
+            {message.text}
           </div>
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
-        <div className="flex gap-2 mb-8 border-b border-gray-200 pb-4">
-          {[
-            { id: "stats", label: "Statistics", icon: BarChart3 },
-            { id: "listings", label: "Listings", icon: Home },
-            { id: "users", label: "Users", icon: Users },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                activeTab === tab.id
-                  ? "bg-black text-white shadow-lg"
-                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              {tab.label}
-            </button>
-          ))}
+      <main className="max-w-6xl mx-auto p-6">
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab("stats")}
+            className={`px-4 py-2 rounded ${
+              activeTab === "stats" ? "bg-black text-white" : "bg-white border"
+            }`}
+          >
+            Stats
+          </button>
+          <button
+            onClick={() => setActiveTab("listings")}
+            className={`px-4 py-2 rounded ${
+              activeTab === "listings"
+                ? "bg-black text-white"
+                : "bg-white border"
+            }`}
+          >
+            Listings
+          </button>
+          <button
+            onClick={() => setActiveTab("users")}
+            className={`px-4 py-2 rounded ${
+              activeTab === "users" ? "bg-black text-white" : "bg-white border"
+            }`}
+          >
+            Users
+          </button>
         </div>
 
-        {/* Stats Tab */}
         {activeTab === "stats" && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Global Statistics
-            </h2>
+          <section>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white border-2 border-black rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-600 text-sm font-semibold uppercase tracking-wide">
-                      Total Users
-                    </p>
-                    <p className="text-6xl font-bold text-black mt-3">
-                      {stats.totalUsers}
-                    </p>
-                  </div>
-                  <div className="bg-black rounded-2xl p-4">
-                    <Users className="w-12 h-12 text-white" />
-                  </div>
-                </div>
+              <div className="bg-white p-6 rounded border">
+                <h3 className="text-sm font-semibold text-gray-500">
+                  Total Users
+                </h3>
+                <p className="text-4xl font-bold mt-4">{stats.totalUsers}</p>
               </div>
-
-              <div className="bg-white border-2 border-black rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-600 text-sm font-semibold uppercase tracking-wide">
-                      Total Listings
-                    </p>
-                    <p className="text-6xl font-bold text-black mt-3">
-                      {stats.totalListings}
-                    </p>
-                  </div>
-                  <div className="bg-black rounded-2xl p-4">
-                    <Home className="w-12 h-12 text-white" />
-                  </div>
-                </div>
+              <div className="bg-white p-6 rounded border">
+                <h3 className="text-sm font-semibold text-gray-500">
+                  Total Listings
+                </h3>
+                <p className="text-4xl font-bold mt-4">{stats.totalListings}</p>
               </div>
             </div>
-            {/* Quick lists: recent users and listings */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-              <div className="bg-white border-2 border-black rounded-2xl p-6 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Recent Users
-                  </h3>
-                  <button
-                    onClick={() => setActiveTab("users")}
-                    className="text-sm text-gray-600 hover:underline"
-                  >
-                    See all
-                  </button>
-                </div>
-                <ul className="space-y-3">
-                  {users.slice(0, 6).map((u: any) => (
-                    <li
-                      key={u._id}
-                      className="flex items-center justify-between"
-                    >
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-4 rounded border">
+                <h4 className="font-semibold mb-2">Recent Users</h4>
+                <ul className="space-y-2">
+                  {users.slice(0, 6).map((u) => (
+                    <li key={u._id} className="flex justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">
-                          {u.username ?? "—"}
-                        </p>
-                        <p className="text-xs text-gray-500">{u.email ?? ""}</p>
+                        <div className="font-medium">{u.username}</div>
+                        <div className="text-xs text-gray-500">{u.email}</div>
                       </div>
                       <div className="text-xs text-gray-400">
                         {u.role === "admin" ? "Admin" : "User"}
@@ -284,230 +305,120 @@ export default function AdminDashboard() {
                     </li>
                   ))}
                   {users.length === 0 && (
-                    <li className="text-gray-500">No users yet</li>
+                    <li className="text-gray-500">No users</li>
                   )}
                 </ul>
               </div>
 
-              <div className="bg-white border-2 border-black rounded-2xl p-6 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Recent Listings
-                  </h3>
-                  <button
-                    onClick={() => setActiveTab("listings")}
-                    className="text-sm text-gray-600 hover:underline"
-                  >
-                    See all
-                  </button>
-                </div>
-                <ul className="space-y-3">
-                  {listings.slice(0, 6).map((l: any) => (
-                    <li
-                      key={l._id}
-                      className="flex items-center justify-between"
-                    >
+              <div className="bg-white p-4 rounded border">
+                <h4 className="font-semibold mb-2">Recent Listings</h4>
+                <ul className="space-y-2">
+                  {listings.slice(0, 6).map((l) => (
+                    <li key={l._id} className="flex justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">
-                          {l.title ?? "—"}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {l.location ?? ""}
-                        </p>
+                        <div className="font-medium">{l.title}</div>
+                        <div className="text-xs text-gray-500">
+                          {l.location}
+                        </div>
                       </div>
-                      <div className="text-sm font-bold text-gray-900">
+                      <div className="text-sm">
                         {l.price ? `${l.price}/night` : "—"}
                       </div>
                     </li>
                   ))}
                   {listings.length === 0 && (
-                    <li className="text-gray-500">No listings yet</li>
+                    <li className="text-gray-500">No listings</li>
                   )}
                 </ul>
               </div>
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Listings Tab */}
         {activeTab === "listings" && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Manage Listings
-            </h2>
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-black">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-black">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                        Image
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                        Title
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                        Location
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                        Price
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                        Owner
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                        Actions
-                      </th>
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Listings</h2>
+            <div className="bg-white rounded border overflow-auto">
+              <table className="w-full">
+                <thead className="bg-black text-white">
+                  <tr>
+                    <th className="p-3 text-left">Title</th>
+                    <th className="p-3 text-left">Location</th>
+                    <th className="p-3 text-left">Price</th>
+                    <th className="p-3 text-left">Owner</th>
+                    <th className="p-3 text-left">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {listings.map((l) => (
+                    <tr key={l._id} className="border-b">
+                      <td className="p-3">{l.title}</td>
+                      <td className="p-3">{l.location}</td>
+                      <td className="p-3">{l.price ?? "—"}</td>
+                      <td className="p-3">
+                        {typeof l.owner === "string"
+                          ? "—"
+                          : l.owner?.username ?? "—"}
+                      </td>
+                      <td className="p-3">
+                        <button
+                          onClick={() => handleDeleteListing(l._id)}
+                          className="px-3 py-1 bg-black text-white rounded"
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {listings.map((listing) => (
-                      <tr
-                        key={listing._id}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <img
-                            src={listing.image}
-                            alt={listing.title}
-                            className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200"
-                          />
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-gray-900 font-semibold">
-                            {listing.title}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-gray-600">{listing.location}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-gray-900 font-bold">
-                            {listing.price}/night
-                          </p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-gray-900 font-medium">
-                            {listing.owner.username}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {listing.owner.email}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4">
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {activeTab === "users" && (
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Users</h2>
+            <div className="bg-white rounded border overflow-auto">
+              <table className="w-full">
+                <thead className="bg-black text-white">
+                  <tr>
+                    <th className="p-3 text-left">Name</th>
+                    <th className="p-3 text-left">Email</th>
+                    <th className="p-3 text-left">Role</th>
+                    <th className="p-3 text-left">Registered</th>
+                    <th className="p-3 text-left">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u._id} className="border-b">
+                      <td className="p-3">{u.username}</td>
+                      <td className="p-3">{u.email}</td>
+                      <td className="p-3">{u.role ?? "User"}</td>
+                      <td className="p-3">
+                        {u.createdAt
+                          ? new Date(u.createdAt).toLocaleDateString()
+                          : "—"}
+                      </td>
+                      <td className="p-3">
+                        {u.role !== "admin" && (
                           <button
-                            onClick={() => handleDeleteListing(listing._id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
+                            onClick={() => handleDeleteUser(u._id)}
+                            className="px-3 py-1 bg-black text-white rounded"
                           >
-                            <Trash2 className="w-4 h-4" />
                             Delete
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {listings.length === 0 && (
-                  <div className="text-center py-16">
-                    <Home className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 text-lg font-medium">
-                      No listings found
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Users Tab */}
-        {activeTab === "users" && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              User Management
-            </h2>
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-black">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-black">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                        Role
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                        Registered
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                        Actions
-                      </th>
+                        )}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {users.map((user) => (
-                      <tr
-                        key={user._id}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <p className="text-gray-900 font-semibold">
-                            {user.username}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-gray-600">{user.email}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex px-3 py-1 rounded-lg text-xs font-bold border-2 ${
-                              user.role === "admin"
-                                ? "bg-black text-white border-black"
-                                : "bg-white text-black border-black"
-                            }`}
-                          >
-                            {user.role === "admin" ? "👑 Admin" : "👤 User"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-gray-600 font-medium">
-                            {new Date(user.createdAt).toLocaleDateString(
-                              "en-US"
-                            )}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4">
-                          {user.role !== "admin" && (
-                            <button
-                              onClick={() => handleDeleteUser(user._id)}
-                              className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Delete
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {users.length === 0 && (
-                  <div className="text-center py-16">
-                    <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 text-lg font-medium">
-                      No users found
-                    </p>
-                  </div>
-                )}
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
+          </section>
         )}
-      </div>
+      </main>
     </div>
   );
 }
