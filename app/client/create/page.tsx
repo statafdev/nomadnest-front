@@ -159,9 +159,9 @@ export default function CreateListingPage() {
                 accept="image/*"
                 onChange={handleImageChange}
               />
-              {state?.errors?.images && (
+              {(state as any)?.errors?.images && (
                 <p className="text-red-500 text-xs mt-1">
-                  {state.errors.images}
+                  {(state as any).errors.images}
                 </p>
               )}
             </div>
