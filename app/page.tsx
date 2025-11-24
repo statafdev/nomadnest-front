@@ -1,57 +1,28 @@
 'use client';
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowUpRight, MapPin, Sparkles, Shield, Activity, Store, RefreshCw } from "lucide-react";
-import Image from "next/image";
+import { ArrowUpRight, MapPin, Sparkles, Shield, Activity, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import Image from "next/image";
 import placeholderImg from "@/public/globe.svg";
 
-type ListingCard = {
+type Listing = {
   id: string;
   category: string;
   availability: string;
   title: string;
   location: string;
   store: string;
-  description?: string;
   price: string;
   timeframe: string;
-  accent?: string;
+  accent: string;
   image: string;
 };
 
-type ApiListing = {
-  _id: string;
-  title: string;
-  description?: string;
-  price?: number;
-  location?: string;
-  category?: string;
-  isAvailable?: boolean;
-  images?: string[];
-  owner?: {
-    username?: string;
-  };
-};
-
-type ListingFormState = {
-  title: string;
-  description: string;
-  location: string;
-  price: string;
-  category: string;
-  maxGuests: string;
-  bedrooms: string;
-  bathrooms: string;
-  amenities: string;
-  images: string;
-};
-
-const heroShowcase: ListingCard[] = [
+const heroShowcase: Listing[] = [
   {
     id: "artisan-speaker",
     category: "Smart Home",
@@ -90,6 +61,13 @@ const heroShowcase: ListingCard[] = [
   },
 ];
 
+const accentPalette = [
+  "from-cyan-100/70 via-white/70 to-blue-100/60",
+  "from-emerald-100/70 via-white/60 to-slate-100/60",
+  "from-slate-100/70 via-white/60 to-zinc-50/60",
+  "from-rose-100/70 via-white/60 to-orange-50/60",
+];
+
 const navLinks = [
   { label: "Categories", href: "#categories" },
   { label: "Listings", href: "#listings" },
@@ -97,126 +75,49 @@ const navLinks = [
   { label: "Sell", href: "#sell" },
 ];
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
-const normalizeListing = (listing: ApiListing): ListingCard => ({
-  id: listing._id,
-  category: listing.category || "General",
-  availability: listing.isAvailable === false ? "Temporarily unavailable" : "Available now",
-  title: listing.title || "Untitled Listing",
-  location: listing.location || "Worldwide",
-  store: listing.owner?.username || "Independent Seller",
-  description: listing.description,
-  price: listing.price ? currencyFormatter.format(listing.price) : "$0",
-  timeframe: "per stay",
-  image: listing.images?.[0] || placeholderImg.src,
-});
-
 export default function Home() {
-  const initialFormState: ListingFormState = {
-    title: "",
-    description: "",
-    location: "",
-    price: "",
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [listingForm, setListingForm] = useState({
     category: "",
-    maxGuests: "",
-    bedrooms: "",
-    bathrooms: "",
-    amenities: "",
-    images: "",
-  };
+    availability: "",
+    title: "",
+    location: "",
+    store: "",
+    price: "",
+    timeframe: "per unit",
+    image: "",
+  });
 
-  const [listings, setListings] = useState<ListingCard[]>([]);
-  const [isLoadingListings, setIsLoadingListings] = useState(true);
-  const [listingsError, setListingsError] = useState<string | null>(null);
-  const [listingForm, setListingForm] = useState<ListingFormState>(initialFormState);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formMessage, setFormMessage] = useState<{ type: "success" | "error"; text: string } | null>(
-    null
-  );
-
-  const handleListingChange = (field: keyof ListingFormState, value: string) => {
+  const handleListingChange = (field: string, value: string) => {
     setListingForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const fetchListings = useCallback(async () => {
-    setIsLoadingListings(true);
-    setListingsError(null);
-    try {
-      const response = await fetch("/api/listings", { cache: "no-store" });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.message || "Failed to load listings");
-      }
-      const data = Array.isArray(payload?.data) ? payload.data : payload?.data?.data || [];
-      const normalized = data.map((listing: ApiListing) => normalizeListing(listing));
-      setListings(normalized);
-    } catch (error) {
-      setListingsError(
-        error instanceof Error ? error.message : "Something went wrong while loading listings"
-      );
-    } finally {
-      setIsLoadingListings(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchListings();
-  }, [fetchListings]);
-
-  const handleAddListing = async (event: FormEvent<HTMLFormElement>) => {
+  const handleAddListing = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsSubmitting(true);
-    setFormMessage(null);
-    try {
-      const payload = {
-        title: listingForm.title,
-        description: listingForm.description,
-        location: listingForm.location,
-        price: Number(listingForm.price),
-        category: listingForm.category,
-        amenities: listingForm.amenities
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-        maxGuests: Number(listingForm.maxGuests),
-        bedrooms: Number(listingForm.bedrooms),
-        bathrooms: Number(listingForm.bathrooms),
-        images: listingForm.images
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-      };
-
-      const response = await fetch("/api/listings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.message || "Failed to create listing");
-      }
-
-      setFormMessage({ type: "success", text: "Listing published successfully" });
-      setListingForm(initialFormState);
-      await fetchListings();
-    } catch (error) {
-      setFormMessage({
-        type: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Unable to publish listing. Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
+    if (!listingForm.title || !listingForm.price || !listingForm.category) {
+      return;
     }
+
+    const accent = accentPalette[listings.length % accentPalette.length];
+    const image = listingForm.image || placeholderImg.src;
+    const newListing: Listing = {
+      ...listingForm,
+      id: `${Date.now()}`,
+      accent,
+      image,
+    };
+
+    setListings((prev) => [newListing, ...prev]);
+    setListingForm({
+      category: "",
+      availability: "",
+      title: "",
+      location: "",
+      store: "",
+      price: "",
+      timeframe: "per unit",
+      image: "",
+    });
   };
 
   return (
@@ -388,6 +289,29 @@ export default function Home() {
           </div>
 
           <form onSubmit={handleAddListing} className="space-y-6 rounded-3xl border border-white/70 bg-white/90 p-6 shadow-xl shadow-slate-200/70">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Input
+                  id="category"
+                  placeholder="e.g. Smart Home"
+                  value={listingForm.category}
+                  onChange={(event) => handleListingChange("category", event.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="availability">Availability</Label>
+                <Input
+                  id="availability"
+                  placeholder="Ships in 48h"
+                  value={listingForm.availability}
+                  onChange={(event) => handleListingChange("availability", event.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="title">Listing title</Label>
               <Input
@@ -400,13 +324,12 @@ export default function Home() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe the product or service in a few sentences"
-                value={listingForm.description}
-                onChange={(event) => handleListingChange("description", event.target.value)}
-                required
+              <Label htmlFor="image">Image URL (optional)</Label>
+              <Input
+                id="image"
+                placeholder="https://images..."
+                value={listingForm.image}
+                onChange={(event) => handleListingChange("image", event.target.value)}
               />
             </div>
 
@@ -422,12 +345,12 @@ export default function Home() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="store">Store / Seller</Label>
                 <Input
-                  id="category"
-                  placeholder="Smart Home"
-                  value={listingForm.category}
-                  onChange={(event) => handleListingChange("category", event.target.value)}
+                  id="store"
+                  placeholder="Studio Driftwood"
+                  value={listingForm.store}
+                  onChange={(event) => handleListingChange("store", event.target.value)}
                   required
                 />
               </div>
@@ -435,94 +358,33 @@ export default function Home() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="price">Price (USD)</Label>
+                <Label htmlFor="price">Price</Label>
                 <Input
                   id="price"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="620"
+                  placeholder="$620"
                   value={listingForm.price}
                   onChange={(event) => handleListingChange("price", event.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="amenities">Amenities / tags</Label>
-                <Input
-                  id="amenities"
-                  placeholder="Hi-fi audio, walnut, bluetooth"
-                  value={listingForm.amenities}
-                  onChange={(event) => handleListingChange("amenities", event.target.value)}
-                />
+                <Label htmlFor="timeframe">Cadence</Label>
+                <select
+                  id="timeframe"
+                  value={listingForm.timeframe}
+                  onChange={(event) => handleListingChange("timeframe", event.target.value)}
+                  className="h-11 w-full rounded-md border border-gray-200 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                >
+                  <option value="per unit">per unit</option>
+                  <option value="per sprint">per sprint</option>
+                  <option value="per hour">per hour</option>
+                  <option value="per project">per project</option>
+                </select>
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="maxGuests">Max guests / qty</Label>
-                <Input
-                  id="maxGuests"
-                  type="number"
-                  min="1"
-                  placeholder="2"
-                  value={listingForm.maxGuests}
-                  onChange={(event) => handleListingChange("maxGuests", event.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bedrooms">Bedrooms</Label>
-                <Input
-                  id="bedrooms"
-                  type="number"
-                  min="0"
-                  placeholder="1"
-                  value={listingForm.bedrooms}
-                  onChange={(event) => handleListingChange("bedrooms", event.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bathrooms">Bathrooms</Label>
-                <Input
-                  id="bathrooms"
-                  type="number"
-                  min="0"
-                  placeholder="1"
-                  value={listingForm.bathrooms}
-                  onChange={(event) => handleListingChange("bathrooms", event.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="images">Image URLs (comma separated)</Label>
-              <Input
-                id="images"
-                placeholder="https://images..., https://cdn..."
-                value={listingForm.images}
-                onChange={(event) => handleListingChange("images", event.target.value)}
-              />
-            </div>
-
-            {formMessage && (
-              <p
-                className={`text-sm ${
-                  formMessage.type === "error" ? "text-red-500" : "text-emerald-600"
-                }`}
-              >
-                {formMessage.text}
-              </p>
-            )}
-
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full border border-black bg-black py-6 text-base text-white hover:bg-black/90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSubmitting ? "Publishing..." : "Publish listing via API"}
+            <Button type="submit" className="w-full border border-black bg-black py-6 text-base text-white hover:bg-black/90">
+              Add listing to showcase rail
               <ArrowUpRight className="ml-2 h-4 w-4" />
             </Button>
           </form>
@@ -543,43 +405,12 @@ export default function Home() {
                 and fulfillment promises.
               </p>
             </div>
-            <div className="flex items-center gap-3 text-sm text-slate-500">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={fetchListings}
-                disabled={isLoadingListings}
-                className="border border-black/10 bg-transparent px-4 text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingListings ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
-              <span>
-                {isLoadingListings
-                  ? "Loading listings..."
-                  : listings.length > 0
-                    ? `${listings.length} live listings`
-                    : "No listings yet"}
-              </span>
+            <div className="text-sm text-slate-500">
+              {listings.length > 0 ? `${listings.length} live listings` : "No listings yet"}
             </div>
           </div>
 
-          {listingsError && (
-            <div className="rounded-3xl border border-red-100 bg-red-50/70 p-4 text-sm text-red-600">
-              {listingsError}
-            </div>
-          )}
-
-          {isLoadingListings ? (
-            <div className="grid gap-6 md:grid-cols-2">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div
-                  key={`skeleton-${index}`}
-                  className="h-64 rounded-3xl border border-white/60 bg-white/50 shadow-inner shadow-white/70 animate-pulse"
-                />
-              ))}
-            </div>
-          ) : listings.length === 0 ? (
+          {listings.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-black/10 bg-white/70 p-10 text-center text-slate-500 shadow-inner shadow-white/60">
               <p className="text-lg font-medium text-slate-900">No listings posted yet</p>
               <p className="mt-2 text-sm">
@@ -611,10 +442,10 @@ export default function Home() {
                       <span>{listing.availability}</span>
                     </div>
                     <h3 className="mt-4 text-2xl font-semibold text-slate-950">{listing.title}</h3>
-                    {listing.description && (
-                      <p className="mt-2 text-sm text-slate-500 line-clamp-2">{listing.description}</p>
-                    )}
-                    <div className="mt-3 space-y-1">
+                    <div className="mt-2 space-y-1">
+                      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        {listing.availability}
+                      </p>
                       <p className="flex items-center gap-2 text-sm text-slate-500">
                         <MapPin className="h-4 w-4" />
                         {listing.location}
