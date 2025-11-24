@@ -40,7 +40,7 @@ export default function RegisterPage() {
 
     try {
       console.log("Registering:", form);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // await new Promise((resolve) => setTimeout(resolve, 1500));
 
       router.push("/login");
     } catch (err) {
