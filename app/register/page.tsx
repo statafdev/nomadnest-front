@@ -1,138 +1,130 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
-
-// Shadcn UI Components
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const [form, setForm] = useState({
-    username: "",
-    email: "",
-    password: "",
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    const form = e.target as HTMLFormElement;
+    const username = form.username.value;
+    const email = form.email.value;
+    const password = form.password.value;
+    const passwordConfirm = form.passwordConfirm.value;
 
     try {
-      console.log("Registering:", form);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username,
+            email,
+            password,
+            passwordConfirm,
+          }),
+        }
+      );
 
-      router.push("/login");
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setIsLoading(false);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMsg(data.message || "Registration failed");
+      } else {
+        setSuccessMsg("Account created! Redirecting to login...");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
+      }
+    } catch (error) {
+      setErrorMsg("Server error. Try again.");
     }
+
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
-            Create an account
-          </CardTitle>
-          <CardDescription className="text-center">
-            Join NomadNest to find your next workspace.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username Field */}
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                placeholder="johndoe"
-                required
-                value={form.username}
-                onChange={handleChange}
-              />
-            </div>
+    <div className="min-h-screen flex items-center justify-center">
+      <form
+        onSubmit={handleRegister}
+        className="bg-white p-8 rounded-lg shadow-md w-96"
+      >
+        <h1 className="text-2xl font-bold mb-6">Create an Account</h1>
 
-            {/* Email Field */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="john@example.com"
-                required
-                value={form.email}
-                onChange={handleChange}
-              />
-            </div>
+        {errorMsg && (
+          <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+            {errorMsg}
+          </div>
+        )}
 
-            {/* Password Field */}
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                value={form.password}
-                onChange={handleChange}
-              />
-            </div>
+        {successMsg && (
+          <div className="bg-green-100 text-green-700 p-3 rounded mb-4">
+            {successMsg}
+          </div>
+        )}
 
-            {/* Error Message */}
-            {error && (
-              <p className="text-sm text-red-500 text-center">{error}</p>
-            )}
+        <div className="mb-4">
+          <label className="block mb-2">Username</label>
+          <input
+            name="username"
+            type="text"
+            required
+            className="w-full border rounded px-3 py-2"
+          />
+        </div>
 
-            <Button type="submit" className="w-full mt-4" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                "Sign Up"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="text-primary hover:underline font-medium"
-            >
-              Log in
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
+        <div className="mb-4">
+          <label className="block mb-2">Email</label>
+          <input
+            name="email"
+            type="email"
+            required
+            className="w-full border rounded px-3 py-2"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block mb-2">Password</label>
+          <input
+            name="password"
+            type="password"
+            required
+            className="w-full border rounded px-3 py-2"
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="block mb-2">Confirm Password</label>
+          <input
+            name="passwordConfirm"
+            type="password"
+            required
+            className="w-full border rounded px-3 py-2"
+          />
+        </div>
+
+        <button
+          disabled={loading}
+          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+        >
+          {loading ? "Creating account..." : "Sign Up"}
+        </button>
+
+        <p className="text-sm mt-4">
+          Already have an account?{" "}
+          <a href="/login" className="text-blue-500 underline">
+            Login here
+          </a>
+        </p>
+      </form>
     </div>
   );
 }
