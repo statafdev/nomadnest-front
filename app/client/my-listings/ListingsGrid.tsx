@@ -55,15 +55,31 @@ export default function ListingsGrid(props: any) {
         >
           <Card className="rounded-2xl shadow-md hover:shadow-xl transition bg-white overflow-hidden">
             <div className="relative w-full h-48">
-              <Image
-                src={item.images?.[0] || "/placeholder.jpg"}
-                alt={item.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw,
-                       (max-width: 1200px) 50vw,
-                       25vw"
-              />
+              {(() => {
+                const src = item.images?.[0] || "/placeholder.jpg";
+                const isExternal =
+                  typeof src === "string" && /^https?:\/\//i.test(src);
+
+                if (isExternal) {
+                  return (
+                    <img
+                      src={src}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                  );
+                }
+
+                return (
+                  <Image
+                    src={src}
+                    alt={item.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                  />
+                );
+              })()}
             </div>
 
             <CardHeader>
