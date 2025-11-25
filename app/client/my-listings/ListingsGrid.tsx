@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { motion } from "framer-motion";
-
+import { useRouter } from "next/navigation";
 // ---- Types ----
 interface Listing {
   _id: string;
@@ -17,6 +17,7 @@ interface Listing {
 
 export default function ListingsGrid(props: any) {
   const [listings, setListings] = useState<Listing[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -54,15 +55,31 @@ export default function ListingsGrid(props: any) {
         >
           <Card className="rounded-2xl shadow-md hover:shadow-xl transition bg-white overflow-hidden">
             <div className="relative w-full h-48">
-              <Image
-                src={item.images?.[0] || "/placeholder.jpg"}
-                alt={item.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw,
-                       (max-width: 1200px) 50vw,
-                       25vw"
-              />
+              {(() => {
+                const src = item.images?.[0] || "/placeholder.jpg";
+                const isExternal =
+                  typeof src === "string" && /^https?:\/\//i.test(src);
+
+                if (isExternal) {
+                  return (
+                    <img
+                      src={src}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                  );
+                }
+
+                return (
+                  <Image
+                    src={src}
+                    alt={item.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                  />
+                );
+              })()}
             </div>
 
             <CardHeader>
@@ -78,7 +95,12 @@ export default function ListingsGrid(props: any) {
               <p className="text-md font-bold text-blue-600">
                 {item.price} DA / nuit
               </p>
-              <Button className="mt-3 w-full">Voir plus</Button>
+              <Button
+                onClick={() => router.push(`/client/my-listings/${item._id}`)}
+                className="mt-3 w-full cursor-pointer"
+              >
+                Voir plus
+              </Button>
             </CardContent>
           </Card>
         </motion.div>
