@@ -31,7 +31,7 @@ export default async function proxy(req: NextRequest) {
 
   // Redirect to dashboard if accessing login with valid token
   if (isPublicRoute && token && path === "/login") {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+    return NextResponse.redirect(new URL("/client", req.nextUrl));
   }
 
   return NextResponse.next();
