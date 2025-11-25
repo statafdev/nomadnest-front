@@ -11,6 +11,7 @@ import {
   Star,
   TrendingUp,
 } from "lucide-react";
+import Link from "next/link"; // ADDED
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
   ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/api`
@@ -59,6 +60,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* NAVBAR */}
       <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-lg border-b border-gray-200 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -91,17 +93,27 @@ export default function LandingPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="px-4 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg transition-colors">
+              {/* LOGIN BUTTON → /login */}
+              <Link
+                href="/login"
+                className="px-4 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg transition-colors"
+              >
                 Login
-              </button>
-              <button className="px-4 py-2 bg-black text-white font-semibold hover:bg-gray-800 rounded-lg transition-colors">
+              </Link>
+
+              {/* SIGN UP BUTTON → /register */}
+              <Link
+                href="/register"
+                className="px-4 py-2 bg-black text-white font-semibold hover:bg-gray-800 rounded-lg transition-colors"
+              >
                 Sign up
-              </button>
+              </Link>
             </div>
           </div>
         </div>
       </nav>
 
+      {/* HERO SECTION */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
@@ -113,11 +125,13 @@ export default function LandingPage() {
                 <div className="absolute -bottom-2 left-0 w-full h-4 bg-gray-200 -z-10"></div>
               </span>
             </h1>
+
             <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
               Discover perfect stays for digital nomads — high-speed internet,
               dedicated workspaces and comfortable amenities.
             </p>
 
+            {/* SEARCH BAR */}
             <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
               <div className="flex gap-2 p-2 bg-white border-2 border-black rounded-2xl shadow-lg">
                 <div className="flex-1 flex items-center gap-3 px-4">
@@ -143,6 +157,7 @@ export default function LandingPage() {
             </form>
           </div>
 
+          {/* FEATURES */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-20">
             {[
               {
@@ -181,6 +196,7 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* POPULAR LISTINGS */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-12">
@@ -192,6 +208,7 @@ export default function LandingPage() {
                 Discover our top destinations
               </p>
             </div>
+
             <button className="hidden md:flex items-center gap-2 px-6 py-3 border-2 border-black rounded-xl font-semibold hover:bg-black hover:text-white transition-colors">
               See all
               <ArrowRight className="w-5 h-5" />
@@ -208,6 +225,7 @@ export default function LandingPage() {
               {listings.map((listing) => {
                 const ownerName = listing.owner?.username ?? "Host";
                 const ownerInitial = ownerName.charAt(0).toUpperCase();
+
                 return (
                   <div
                     key={listing._id ?? ownerName}
@@ -229,6 +247,7 @@ export default function LandingPage() {
                         {listing.price}/night
                       </div>
                     </div>
+
                     <div className="p-6">
                       <div className="flex items-center gap-2 mb-3">
                         <MapPin className="w-4 h-4 text-gray-500" />
@@ -236,12 +255,15 @@ export default function LandingPage() {
                           {listing.location}
                         </span>
                       </div>
+
                       <h3 className="text-xl font-bold text-black mb-2 group-hover:underline">
                         {listing.title}
                       </h3>
+
                       <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                         {listing.description}
                       </p>
+
                       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
@@ -253,6 +275,7 @@ export default function LandingPage() {
                             {ownerName}
                           </span>
                         </div>
+
                         <button className="text-black font-semibold hover:underline flex items-center gap-1">
                           View details
                           <ArrowRight className="w-4 h-4" />
@@ -279,6 +302,7 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* STATS */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-black text-white">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
@@ -302,6 +326,7 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* CALL TO ACTION */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-5xl font-bold text-black mb-6">
@@ -310,13 +335,19 @@ export default function LandingPage() {
           <p className="text-xl text-gray-600 mb-8">
             Join thousands of digital nomads who found their ideal workspace
           </p>
-          <button className="px-10 py-4 bg-black text-white font-bold text-lg rounded-xl hover:bg-gray-800 transition-colors inline-flex items-center gap-3 shadow-xl">
+
+          {/* GET STARTED → redirect to /login */}
+          <Link
+            href="/login"
+            className="px-10 py-4 bg-black text-white font-bold text-lg rounded-xl hover:bg-gray-800 transition-colors inline-flex items-center gap-3 shadow-xl"
+          >
             Get started for free
             <ArrowRight className="w-6 h-6" />
-          </button>
+          </Link>
         </div>
       </section>
 
+      {/* FOOTER */}
       <footer className="bg-gray-50 border-t-2 border-black py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
@@ -331,6 +362,7 @@ export default function LandingPage() {
                 The booking platform for digital nomads
               </p>
             </div>
+
             <div>
               <h4 className="font-bold text-black mb-4">Product</h4>
               <ul className="space-y-2">
@@ -360,6 +392,7 @@ export default function LandingPage() {
                 </li>
               </ul>
             </div>
+
             <div>
               <h4 className="font-bold text-black mb-4">Company</h4>
               <ul className="space-y-2">
@@ -389,6 +422,7 @@ export default function LandingPage() {
                 </li>
               </ul>
             </div>
+
             <div>
               <h4 className="font-bold text-black mb-4">Support</h4>
               <ul className="space-y-2">
@@ -419,6 +453,7 @@ export default function LandingPage() {
               </ul>
             </div>
           </div>
+
           <div className="pt-8 border-t border-gray-200 text-center text-gray-600">
             <p>© 2025 NomadNest. All rights reserved.</p>
           </div>
