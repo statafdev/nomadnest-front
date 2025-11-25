@@ -56,17 +56,35 @@ export default function Page() {
       <h1 className="text-3xl font-bold">{listing.title}</h1>
       <p className="text-gray-500">{listing.location}</p>
 
-      {listing.images?.map((image) => (
+      {listing.images?.map((image, idx) => (
         <div
-          key={image}
+          key={image ?? idx}
           className="relative w-full h-80 mt-6 rounded-xl overflow-hidden shadow-lg"
         >
-          <Image
-            src={image}
-            alt={listing.title}
-            fill
-            className="object-cover"
-          />
+          {(() => {
+            const src = image || "/placeholder.jpg";
+            const isExternal =
+              typeof src === "string" && /^https?:\/\//i.test(src);
+
+            if (isExternal) {
+              return (
+                <img
+                  src={src}
+                  alt={listing.title}
+                  className="w-full h-full object-cover"
+                />
+              );
+            }
+
+            return (
+              <Image
+                src={src}
+                alt={listing.title}
+                fill
+                className="object-cover"
+              />
+            );
+          })()}
         </div>
       ))}
 
