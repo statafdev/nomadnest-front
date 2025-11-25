@@ -56,14 +56,19 @@ export default function Page() {
       <h1 className="text-3xl font-bold">{listing.title}</h1>
       <p className="text-gray-500">{listing.location}</p>
 
-      <div className="relative w-full h-80 mt-6 rounded-xl overflow-hidden shadow-lg">
-        <Image
-          src={listing.images?.[0] || "/placeholder.jpg"}
-          alt={listing.title}
-          fill
-          className="object-cover"
-        />
-      </div>
+      {listing.images?.map((image) => (
+        <div
+          key={image}
+          className="relative w-full h-80 mt-6 rounded-xl overflow-hidden shadow-lg"
+        >
+          <Image
+            src={image}
+            alt={listing.title}
+            fill
+            className="object-cover"
+          />
+        </div>
+      ))}
 
       <p className="mt-6 text-blue-600 font-semibold text-xl">
         {listing.price} DA / nuit
